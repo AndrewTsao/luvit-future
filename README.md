@@ -3,7 +3,7 @@ luvit-future
 
 Luvit port of [Dart Future](http://api.dartlang.org/docs/continuous/dart_core/Future.html)
 
-With lua style, our Future always has an `ok` flag and a `value`, when future failed, `then` callback will called
+Follow then lua return style, our Future always has an `ok` flag and a `value`, when future failed, `then` callback will called
 with `false` and error message, otherwise `true` and `value`.
 
 Example
@@ -46,9 +46,13 @@ end)
   end)
   return completer:getFuture()
 end)
-:on("then", print)
+:on("then", p)
 
 -- An immediate future
 f = Future.immediate(true, 'immediate')
-f:on("then", print)
+f:on("then", p)
+
+-- wait futures
+f = wait(getTimeoutFuture(), getTimeoutFuture())
+f:on("then", p)
 ```
