@@ -84,8 +84,33 @@ function Completer:getFuture()
   return self._future
 end
 
+local function wait(...)
+  local completer = Completer:new()
+  local futures = {...}
+  local len = #futures
+  local results = {}
+  
+  if len == 0 then
+    return Future.immediate(true, results)
+  end
+
+  for i, future in ipairs(futures) do
+    future:on("then", function(ok, val)
+      local idx = i
+      results[idx] = {ok, val}
+      len = len - 1
+      if len == 0 then
+        completer:complete(true, results)
+      end
+    end)
+  end
+
+  return completer:getFuture()
+end
+
 return {
   Future = Future,
   Completer = Completer,
+  wait = wait,
 }
 
