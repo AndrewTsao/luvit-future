@@ -3,7 +3,7 @@ luvit-future
 
 Luvit port of [Dart Future](http://api.dartlang.org/docs/continuous/dart_core/Future.html)
 
-Follow lua exception pattern, our Future always has an `ok` flag plus a `value`. if future failed, then 
+Follow [lua exception pattern](http://www.lua.org/wshop06/Belmonte.pdf), our Future always has an `ok` flag plus a `value`. if future failed, then 
 the `then` callback called with `false` plus string with error message, otherwise `true` plus `value`.
 
 Example
