@@ -1,12 +1,15 @@
 luvit-future
 ============
 
-Luvit port of Dart Future
+Luvit port of [Dart Future](http://api.dartlang.org/docs/continuous/dart_core/Future.html)
+
+With lua style, our Future always has an `ok` flag and a `value`, when future failed, `then` callback will called
+with `false` and error message, otherwise `true` and `value`.
 
 Example
 =======
 
-```
+```lua
 local timer = require("timer")
 local Future = require("future").Future
 local Completer = require("future").Completer
