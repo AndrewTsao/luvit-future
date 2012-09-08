@@ -3,16 +3,18 @@ luvit-future
 
 Luvit port of [Dart Future](http://api.dartlang.org/docs/continuous/dart_core/Future.html)
 
-Follow then lua return style, our Future always has an `ok` flag and a `value`, when future failed, `then` callback will called
-with `false` and error message, otherwise `true` and `value`.
+Follow lua exception pattern, our Future always has an `ok` flag plus a `value`. if future failed, then 
+the `then` callback called with `false` plus string with error message, otherwise `true` plus `value`.
 
 Example
 =======
 
 ```lua
-local timer = require("timer")
 local Future = require("future").Future
 local Completer = require("future").Completer
+local wait = require("future").wait
+
+local timer = require("timer")
 
 local function getTimeoutFuture()
   local completer = Completer:new()
