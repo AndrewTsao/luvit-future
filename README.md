@@ -25,7 +25,7 @@ local function getTimeoutFuture()
 end
 
 getTimeoutFuture()
-:on("then", function(ok, val)
+:on(function(ok, val)
   if ok then
     p(val)
   else
@@ -48,13 +48,13 @@ end)
   end)
   return completer:getFuture()
 end)
-:on("then", p)
+:on(p)
 
 -- An immediate future
 f = Future.immediate(true, 'immediate')
-f:on("then", p)
+f:on(p)
 
 -- wait futures
 f = wait(getTimeoutFuture(), getTimeoutFuture())
-f:on("then", p)
+f:on(p)
 ```
