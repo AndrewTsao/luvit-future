@@ -1,28 +1,23 @@
 -- Luvit port of Dart Future
+-- Future must not stop, all callbacks be called with protected.
 
-local Emitter = require("core").Emitter
 local Object = require("core").Object
+local traceback = require("debug").traceback
 
-local Future = Emitter:extend()
+local Future = Object:extend() 
 local Completer = Object:extend()
 
 function Future:initialize()
   -- _ok
   -- _val
   -- _isComplete
+  -- _callbacks
 end
 
 function Future.immediate(ok, val)
   local future = Future:new()
   future:_setValue(ok, val)
   return future
-end
-
-function Future:getValue()
-  if not self._isComplete then
-    error("future not complete")
-  end
-  return self._ok, self._val
 end
 
 function Future:_setValue(ok, val)
@@ -34,38 +29,69 @@ function Future:_setValue(ok, val)
   self:_complete()
 end
 
-function Future:hasValue()
-  return self._isComplete
+local function try(callback, ok, val)
+  local _, err = xpcall(callback, traceback, ok, val)
+  if not _ then
+    _, err = xpcall(callback, traceback, false, err)
+  end
+  return _, err
 end
 
-function Future:on(name, callback)
+function Future:on(callback)
   if self._isComplete then
-    callback(self._ok, self._val)
+    local _, err = try(callback, self._ok, self._val)
+    if not _ then print('[FUTURE]:', err) end
   else
-    Emitter.on(self, name, callback)
+    local callbacks = self._callbacks or {}
+    callbacks[#callbacks+1] = callback
+    self._callbacks = callbacks
   end
   return self
 end
 
 function Future:_complete()
   self._isComplete = true
-  self:emit("then", self._ok, self._val)
+  local ok, val = self._ok, self._val
+  
+  local callbacks = self._callbacks
+  if not callbacks or #callbacks == 0 then return end
+  
+  -- callback won't changed listeners dynamically. otherwise, enumerate callbacks failed.
+  for k, callback in ipairs(callbacks) do
+    local _, err = try(callback, ok, val)
+    if not _ then print(err) end
+  end
 end
 
 function Future:transform(transformation)
   local completer = Completer:new()
-  self:on("then", function(ok, val)
-    local ok, val = transformation(ok, val)
-    completer:complete(ok, val)
+  self:on(function(ok, val)
+    local nok, nval
+    local _, err = try(function(ok, val)
+      nok, nval = transformation(ok, val)
+    end, ok, val)
+    if not _ then
+      completer:complete(_, err)
+    else
+      completer:complete(nok, nval)
+    end
   end)
   return completer:getFuture()
 end
 
 function Future:chain(transformation)
   local completer = Completer:new()
-  self:on("then", function(ok, val)
-    local future = transformation(ok, val)
-    future:on("then", function(ok, val)
+  self:on(function(ok, val)
+    local future
+    local _, err = try(function (ok, val)
+      future = transformation(ok, val)
+    end, ok, val)
+
+    if not _ then
+      future = Future.immediate(false, err)
+    end
+
+    future:on(function(ok, val)
       completer:complete(ok, val)
     end)
   end)
@@ -95,7 +121,7 @@ local function wait(...)
   end
 
   for i, future in ipairs(futures) do
-    future:on("then", function(ok, val)
+    future:on(function(ok, val)
       local idx = i
       results[idx] = {ok, val}
       len = len - 1
